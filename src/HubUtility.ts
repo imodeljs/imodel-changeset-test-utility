@@ -3,7 +3,7 @@
 * Licensed under the MIT License. See LICENSE.md in the project root for license terms.
 *--------------------------------------------------------------------------------------------*/
 
-import { ChangesetGenerationConfig } from "./Config";
+import { ChangesetGenerationConfig } from "./ChangesetGenerationConfig";
 import { AccessToken, ConnectClient, HubIModel, IModelHubClient, Project, IModelQuery, Version } from "@bentley/imodeljs-clients";
 import { AzureFileHandler } from "@bentley/imodeljs-clients/lib/imodelhub/AzureFileHandler";
 import { Logger, Guid } from "@bentley/bentleyjs-core";

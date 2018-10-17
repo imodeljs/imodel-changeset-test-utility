@@ -4,7 +4,7 @@
 *--------------------------------------------------------------------------------------------*/
 
 import { HubUtility } from "../HubUtility";
-import { ChangesetGenerationConfig } from "../Config";
+import { ChangesetGenerationConfig } from "../ChangesetGenerationConfig";
 import { ChangesetGenerationHarness } from "../ChangesetGenerationHarness";
 import { IModelDbHandler } from "../IModelDbHandler";
 import { Id64, ActivityLoggingContext } from "@bentley/bentleyjs-core/lib/bentleyjs-core";

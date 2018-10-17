@@ -3,7 +3,7 @@
 * Licensed under the MIT License. See LICENSE.md in the project root for license terms.
 *--------------------------------------------------------------------------------------------*/
 
-import { ChangesetGenerationConfig } from "./Config";
+import { ChangesetGenerationConfig } from "./ChangesetGenerationConfig";
 import { HubUtility } from "./HubUtility";
 import { IModelDbHandler } from "./IModelDbHandler";
 import { TestChangesetSequence } from "./TestChangesetSequence";

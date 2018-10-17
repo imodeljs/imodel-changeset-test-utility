@@ -5,7 +5,7 @@
 
 export * from "./ChangesetGenerationHarness";
 export * from "./ChangesetGenerator";
-export * from "./Config";
+export * from "./ChangesetGenerationConfig";
 export * from "./HubUtility";
 export * from "./IModelChangesetCLUtility";
 export * from "./IModelDbHandler";

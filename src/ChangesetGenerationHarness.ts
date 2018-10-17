@@ -3,7 +3,7 @@
 * Licensed under the MIT License. See LICENSE.md in the project root for license terms.
 *--------------------------------------------------------------------------------------------*/
 
-import { ChangesetGenerationConfig } from "./Config";
+import { ChangesetGenerationConfig } from "./ChangesetGenerationConfig";
 import { HubUtility } from "./HubUtility";
 import { IModelDbHandler } from "./IModelDbHandler";
 import { ChangesetGenerator } from "./ChangesetGenerator";
@@ -15,6 +15,7 @@ import { AccessToken } from "@bentley/imodeljs-clients";
 import * as fs from "fs";
 import { Config } from "@bentley/imodeljs-clients";
 import { ColorDef, CodeScopeSpec } from "@bentley/imodeljs-common";
+
 const actx = new ActivityLoggingContext("");
 /** Harness used to facilitate changeset generation */
 export class ChangesetGenerationHarness {
@@ -32,10 +33,7 @@ export class ChangesetGenerationHarness {
     private _codeSpecName = "TestCodeSpec";
     private _categoryName = "TestCategory";
     public constructor(hubUtility?: HubUtility, iModelDbHandler?: IModelDbHandler, localIModelDbPath?: string) {
-
-        // Following must be done before calling any API in imodeljs
-        if (!ChangesetGenerationConfig.iModelJsAppConfigHasAllRequiredVars())
-            Config.App.merge(ChangesetGenerationConfig.iModelJsAppConfig);
+        ChangesetGenerationConfig.setupConfig();
 
         this._iModelDbHandler = iModelDbHandler ? iModelDbHandler : new IModelDbHandler(actx);
         this._hubUtility = hubUtility;
@@ -99,10 +97,6 @@ export class ChangesetGenerationHarness {
         Logger.setLevel(ChangesetGenerationConfig.loggingCategory, LogLevel.Trace);
         Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "Logger initialized...");
         Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `${Config.App}`);
-        if (ChangesetGenerationConfig.buddiRegion === "103" || ChangesetGenerationConfig.buddiRegion === "294") {
-            process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-            Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "Setting NODE_TLS_REJECT_UNAUTHORIZED = 0");
-        }
     }
     private _initializeIModelHost(): void {
         const configuration = new IModelHostConfiguration();

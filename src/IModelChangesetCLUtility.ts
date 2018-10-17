@@ -5,7 +5,7 @@
 
 import { ChangesetGenerationHarness} from "./ChangesetGenerationHarness";
 import { TestChangesetSequence } from "./TestChangesetSequence";
-import { ChangesetGenerationConfig } from "./Config";
+import { ChangesetGenerationConfig } from "./ChangesetGenerationConfig";
 
 class ProcessHandler {
     constructor(private _process: NodeJS.Process) {}
