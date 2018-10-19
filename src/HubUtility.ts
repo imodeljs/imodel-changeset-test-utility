@@ -20,7 +20,6 @@ export class HubUtility {
     public constructor() {
         this.connectClient = new ConnectClient();
         this._hubClient = new IModelHubClient(new AzureFileHandler());
-
     }
     public getHubClient(): IModelHubClient {
         return this._hubClient;

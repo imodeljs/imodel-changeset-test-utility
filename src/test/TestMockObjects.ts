@@ -9,13 +9,27 @@ import { ChangesetGenerationHarness } from "../ChangesetGenerationHarness";
 import { IModelDbHandler } from "../IModelDbHandler";
 import { Id64, ActivityLoggingContext } from "@bentley/bentleyjs-core/lib/bentleyjs-core";
 import { AccessToken } from "@bentley/imodeljs-clients/lib";
-import { IModelDb, GeometricElement3d } from "@bentley/imodeljs-backend/lib/backend";
+import { IModelDb, GeometricElement3d, ConcurrencyControl } from "@bentley/imodeljs-backend/lib/backend";
 import { Version } from "@bentley/imodeljs-clients/lib/imodelhub";
 import * as TypeMoq from "typemoq";
 import { CodeSpec } from "@bentley/imodeljs-common";
+import { Config } from "@bentley/imodeljs-clients";
 export class TestMockObjects {
     public static readonly fakeAccessToken: string = "FAKE_ACCESS_TOKEN";
     public static readonly fakeIModelName: string = "FAKE_IMODEL";
+    public static setupMockAppConfig() {
+        Config.App.merge({
+            imjs_agent_client_id: "FAKE_CLIENT_ID",
+            imjs_agent_client_secret: "FAKE_CLIENT_SECRET",
+            imjs_agent_service_user_email: "FAKE_USER_EMAIL",
+            imjs_agent_service_user_password: "FAKE_USER_PASS",
+            imjs_agent_project_name: "FAKE_PROJECT_NAME",
+            imjs_agent_imodel_name: "FAKE_IMODEL_NAME",
+
+            imjs_buddi_resolve_url_using_region: "103",
+            imjs_default_relying_party_uri: "https://fake.com",
+        });
+    }
     public static getMockChangesetGenerationHarness(throwsError = false, returns = true): ChangesetGenerationHarness {
         const harness  = TypeMoq.Mock.ofType<ChangesetGenerationHarness>();
         harness.setup((_) => _.initialize()).returns(async () => {});
@@ -51,18 +65,24 @@ export class TestMockObjects {
         mockIModelDb.setup((_) => _.saveChanges(TypeMoq.It.isAny())).returns(() => {});
         mockIModelDb.setup((_) => _.pushChanges(TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(async () => {});
         mockIModelDb.setup((_) => _.elements).returns(() => this.getMockIModelDbElements());
+        mockIModelDb.setup((_) => _.concurrencyControl).returns(() => this.getMockConcurrencyControl());
         // Below is a workaround to limitations of the typemoq framework. without it any mock DbOpener will never resolve promise
         // ref: https://stackoverflow.com/questions/44224528/promise-fails-to-resolve-with-typemoq-mock#
         mockIModelDb.setup((_: any) => _.then).returns(() => undefined);
         return mockIModelDb.object;
     }
+    public static getMockConcurrencyControl(): ConcurrencyControl {
+        const concCtrl = TypeMoq.Mock.ofType<ConcurrencyControl>();
+        concCtrl.setup((_) => _.request(TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(async () => {});
+        return concCtrl.object;
+    }
     public static getMockIModelDbHandler(): IModelDbHandler {
         const mockIModelDbHandler = TypeMoq.Mock.ofType(IModelDbHandler);
         mockIModelDbHandler.setup((_) => _.openLatestIModelDb(TypeMoq.It.isAny(), TypeMoq.It.isAny(),
             TypeMoq.It.isAny())).returns(async () => this.getMockIModelDb());
-        mockIModelDbHandler.setup((_) => _.getChangeSetUtilPhysModel(TypeMoq.It.isAny())).returns(() => new Id64("FakePhysModelId"));
+        mockIModelDbHandler.setup((_) => _.getPhysModel(TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() => new Id64("FakePhysModelId"));
         mockIModelDbHandler.setup((_) => _.getCodeSpecByName(TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() => this.getMockCodeSpec());
-        mockIModelDbHandler.setup((_) => _.insertSpatialCategory(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() => new Id64("FakeSpatialCategoryId"));
+        // mockIModelDbHandler.setup((_) => _.insertSpatialCategory(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() => new Id64("FakeSpatialCategoryId"));
         return mockIModelDbHandler.object;
     }
     public static getMockCodeSpec(): CodeSpec {

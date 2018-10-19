@@ -5,43 +5,49 @@
 
 import { Id64, ActivityLoggingContext, Id64Set } from "@bentley/bentleyjs-core";
 import { SubCategoryAppearance, CategoryProps, CodeScopeSpec, CodeSpec, ColorDef, IModel, InformationPartitionElementProps, DbResult } from "@bentley/imodeljs-common";
-import { IModelDb, PhysicalModel, PhysicalElement, PhysicalPartition, SpatialCategory, OpenParams, Element, ECSqlStatement } from "@bentley/imodeljs-backend";
+import { IModelDb, PhysicalModel, PhysicalElement, PhysicalPartition, SpatialCategory, OpenParams, Element, ECSqlStatement, ConcurrencyControl } from "@bentley/imodeljs-backend";
 import { AccessToken } from "@bentley/imodeljs-clients";
 import {  IModelVersion } from "@bentley/imodeljs-common";
+import * as crypto from "crypto";
+const actx = new ActivityLoggingContext("");
 /** Injectable handles for opening IModels andStatic functions to create Models, CodeSecs, Categories, Category Selector, Styles, and View Definitions */
 export class IModelDbHandler {
-    public constructor(private _activityLoggingContext: ActivityLoggingContext) {}
-    private static _physicalModelName = "Physical Model-1-1";
-    private static _spatialCategoryName = "TestCategory";
+    public constructor() {}
+
     public async openLatestIModelDb(accessToken: AccessToken, projectId: string, iModelId: string,
         openParams: OpenParams = OpenParams.pullAndPush(), iModelVersion: IModelVersion = IModelVersion.latest()): Promise<IModelDb> {
-        return await IModelDb.open(this._activityLoggingContext, accessToken, projectId!, iModelId!, openParams, iModelVersion);
+        const briefcase = await IModelDb.open(actx, accessToken, projectId!, iModelId!, openParams, iModelVersion);
+        briefcase.concurrencyControl.setPolicy(new ConcurrencyControl.OptimisticPolicy());
+        return briefcase;
     }
-    public initPhysModelElements(iModelDb: IModelDb, modelId: Id64): void {
-        const elements = this.getChangeSetUtilPhysElements(iModelDb, modelId);
+    public async deletePhysModelElements(iModelDb: IModelDb, modelId: Id64, accessToken: AccessToken): Promise<boolean> {
+        const elements = this.getPhysElementsFromModel(iModelDb, modelId);
         for (const element of elements) {
             iModelDb.elements.deleteElement(element.id);
         }
+        await iModelDb.concurrencyControl.request(actx, accessToken);
         iModelDb.saveChanges("Cleaned out elements from physical model");
+        return elements.length > 0;
     }
 
-    public getChangeSetUtilPhysModel(iModelDb: IModelDb): Id64 | undefined {
+    public getPhysModel(iModelDb: IModelDb, codeValue: string): Id64 | undefined {
         try {
-            const idSet = iModelDb.withPreparedStatement(`SELECT ECInstanceId AS id FROM BisCore:PhysicalModel LIMIT 1`,
+            const idSet = iModelDb.withPreparedStatement(`SELECT ECInstanceId AS id FROM BisCore:PhysicalModel`,
                 (stmt: ECSqlStatement) => {
                     const ids: Id64Set = new Set<string>();
                     while (stmt.step() === DbResult.BE_SQLITE_ROW)
                         ids.add(stmt.getValue(0).getId());
                     return ids;
                 });
-            for (const value of idSet.values()) {
-                return new Id64(value);
+            for (const id of idSet.values()) {
+                if (iModelDb.models.getModel(id).name === codeValue)
+                    return new Id64(id);
             }
         } catch (error) {
         }
         return undefined;
     }
-    public getChangeSetUtilPhysElements(iModelDb: IModelDb, modelId: Id64): Element[] {
+    public getPhysElementsFromModel(iModelDb: IModelDb, modelId: Id64): Element[] {
         const elements: Element[] = [];
         try {
             for (const eidStr of iModelDb.queryEntityIds({from: PhysicalElement.classFullName, where: `Model.Id=${modelId}`})) {
@@ -52,9 +58,9 @@ export class IModelDbHandler {
         }
         return elements;
     }
-    public getSpatialCategory(iModelDb: IModelDb): Element | undefined {
+    public getSpatialCategory(iModelDb: IModelDb, codeName: string): Element | undefined {
         try {
-            for (const eidStr of iModelDb.queryEntityIds({from: SpatialCategory.classFullName, where: `CodeValue='${IModelDbHandler._spatialCategoryName}'`})) {
+            for (const eidStr of iModelDb.queryEntityIds({from: SpatialCategory.classFullName, where: `CodeValue='${codeName}'`})) {
                 const element = iModelDb.elements.getElement(eidStr);
                 return element;
             }
@@ -62,7 +68,7 @@ export class IModelDbHandler {
         return undefined;
     }
     /** Insert a PhysicalModel */
-    public insertChangeSetUtilPhysicalModel(iModelDb: IModelDb): Id64 {
+    public insertChangeSetUtilPhysicalModel(iModelDb: IModelDb, codeName: string): Id64 {
         const partitionProps: InformationPartitionElementProps = {
             classFullName: PhysicalPartition.classFullName,
             model: IModel.repositoryModelId,
@@ -70,14 +76,15 @@ export class IModelDbHandler {
                 id: IModel.rootSubjectId,
                 relClassName: "BisCore:SubjectOwnsPartitionElements",
             },
-            code: PhysicalPartition.createCode(iModelDb, IModel.rootSubjectId, IModelDbHandler._physicalModelName),
+            code: PhysicalPartition.createCode(iModelDb, IModel.rootSubjectId, codeName),
         };
         const partitionId: Id64 = iModelDb.elements.insertElement(partitionProps);
         const model: PhysicalModel = iModelDb.models.createModel({
             classFullName: PhysicalModel.classFullName,
             modeledElement: { id: partitionId },
         }) as PhysicalModel;
-        return iModelDb.models.insertModel(model);
+        const modelId = iModelDb.models.insertModel(model);
+        return modelId;
     }
     /** Insert a SpatialCategory */
     public insertSpatialCategory(iModelDb: IModelDb, modelId: Id64, name: string, color: ColorDef): Id64 {
@@ -94,7 +101,7 @@ export class IModelDbHandler {
         return categoryId;
     }
     public insertCodeSpec(iModelDb: IModelDb, name: string, scopeType: CodeScopeSpec.Type): Id64 {
-        const codeSpec = new CodeSpec(iModelDb, new Id64(), name, scopeType);
+        const codeSpec = new CodeSpec(iModelDb, Id64.fromUint32Pair(crypto.randomBytes(4).readUInt32BE(0, true), crypto.randomBytes(4).readUInt32BE(0, true)), name, scopeType);
         iModelDb.codeSpecs.insert(codeSpec);
         return codeSpec.id;
     }

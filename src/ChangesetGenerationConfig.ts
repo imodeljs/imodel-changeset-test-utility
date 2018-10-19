@@ -35,8 +35,6 @@ export class ChangesetGenerationConfig {
             // -----------------------------------------------------------------------------------------------------------
             // Other application settings (NOT REQUIRED)
             // -----------------------------------------------------------------------------------------------------------
-            imjs_agent_port: 3000,
-            imjs_agent_listen_time: 40000,
             imjs_default_relying_party_uri: "https://connect-wsg20.bentley.com",
             imjs_buddi_resolve_url_using_region: process.env.IMJS_BUDDI_RESOLVE_URL_USING_REGION,
           });

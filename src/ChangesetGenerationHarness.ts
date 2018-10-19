@@ -14,13 +14,13 @@ import { IModel } from "@bentley/imodeljs-common";
 import { AccessToken } from "@bentley/imodeljs-clients";
 import * as fs from "fs";
 import { Config } from "@bentley/imodeljs-clients";
-import { ColorDef, CodeScopeSpec } from "@bentley/imodeljs-common";
+import { ColorDef, CodeScopeSpec, IModelVersion } from "@bentley/imodeljs-common";
 
 const actx = new ActivityLoggingContext("");
 /** Harness used to facilitate changeset generation */
 export class ChangesetGenerationHarness {
     private _iModelDbHandler: IModelDbHandler;
-    private _localIModelDbPath: string;
+    private _localIModelDbPath?: string;
     private _isInitialized: boolean = false;
     private _iModelId?: string;
     private _iModelDb?: IModelDb;
@@ -30,14 +30,17 @@ export class ChangesetGenerationHarness {
     private _physicalModelId?: Id64;
     private _codeSpecId?: Id64;
     private _categoryId?: Id64;
-    private _codeSpecName = "TestCodeSpec";
-    private _categoryName = "TestCategory";
+    private _changeSetGenerator?: ChangesetGenerator;
+    private _physicalModelName = "ChangeSetUtil Physical Model";
+    private _spatialCategoryName = "ChangeSetUtilCategory";
+    private _codeSpecName = "ChangeSetUtilCodeSpec";
+    private _categoryName = "ChangeSetUtilCategory";
     public constructor(hubUtility?: HubUtility, iModelDbHandler?: IModelDbHandler, localIModelDbPath?: string) {
         ChangesetGenerationConfig.setupConfig();
-
-        this._iModelDbHandler = iModelDbHandler ? iModelDbHandler : new IModelDbHandler(actx);
-        this._hubUtility = hubUtility;
-        this._localIModelDbPath = localIModelDbPath ? localIModelDbPath : ChangesetGenerationConfig.outputDir;
+        this._iModelDbHandler = iModelDbHandler ? iModelDbHandler : new IModelDbHandler();
+        if (hubUtility)
+            this._hubUtility = hubUtility;
+        this._localIModelDbPath = localIModelDbPath ? localIModelDbPath : __dirname;
 
         if (!IModelHost.configuration)
             this._initializeIModelHost();
@@ -57,24 +60,46 @@ export class ChangesetGenerationHarness {
                 Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Opening latest iModel`);
                 this._iModelDb = await this._iModelDbHandler.openLatestIModelDb(this._accessToken!, this._projectId!, this._iModelId!);
                 const definitionModelId: Id64 = IModel.dictionaryId;
-                const physModelId = this._iModelDbHandler.getChangeSetUtilPhysModel(this._iModelDb);
-                if (!physModelId)
-                    this._physicalModelId = this._iModelDbHandler.insertChangeSetUtilPhysicalModel(this._iModelDb);
-                else
+                let needToPrePush = false;
+                const physModelId = this._iModelDbHandler.getPhysModel(this._iModelDb, this._physicalModelName);
+                if (!physModelId) {
+                    this._physicalModelId = this._iModelDbHandler.insertChangeSetUtilPhysicalModel(this._iModelDb, this._physicalModelName);
+                    needToPrePush = true;
+                } else
                     this._physicalModelId = physModelId;
-                const codeSpec = this._iModelDbHandler.getCodeSpecByName(this._iModelDb, this._codeSpecName);
-                if (codeSpec)
-                    this._codeSpecId = codeSpec.id;
-                else
-                    this._codeSpecId = this._iModelDbHandler.insertCodeSpec(this._iModelDb, this._codeSpecName, CodeScopeSpec.Type.Model);
 
-                const spatialCategory = this._iModelDbHandler.getSpatialCategory(this._iModelDb);
-                if (!spatialCategory)
+                const codeSpec = this._iModelDbHandler.getCodeSpecByName(this._iModelDb, this._codeSpecName);
+                if (!codeSpec) {
+                    this._codeSpecId = this._iModelDbHandler.insertCodeSpec(this._iModelDb, this._codeSpecName, CodeScopeSpec.Type.Model);
+                    needToPrePush = true;
+                } else
+                    this._codeSpecId = codeSpec.id;
+
+                const spatialCategory = this._iModelDbHandler.getSpatialCategory(this._iModelDb, this._spatialCategoryName);
+                if (!spatialCategory) {
                     this._categoryId = this._iModelDbHandler.insertSpatialCategory(this._iModelDb, definitionModelId, this._categoryName, new ColorDef("blanchedAlmond"));
-                else
+                    needToPrePush = true;
+                } else
                     this._categoryId = spatialCategory.id;
-                this._iModelDbHandler.initPhysModelElements(this._iModelDb, this._physicalModelId);
-                await this._iModelDb.pushChanges(actx, this._accessToken);
+
+                this._changeSetGenerator = new ChangesetGenerator(this._accessToken!, this._hubUtility!,
+                    this._physicalModelId!, this._categoryId!, this._codeSpecId!, this._iModelDbHandler);
+                if (needToPrePush) {
+                    await this._iModelDb.concurrencyControl.request(actx, this._accessToken!);
+                    this._iModelDb.saveChanges();
+                    await this._iModelDb.pullAndMergeChanges(actx, this._accessToken, IModelVersion.latest());
+                    await this._iModelDb.pushChanges(actx, this._accessToken!);
+                }
+                if (await this._iModelDbHandler.deletePhysModelElements(this._iModelDb, this._physicalModelId, this._accessToken!)) {
+                    await this._iModelDb.concurrencyControl.request(actx, this._accessToken!);
+                    this._iModelDb.saveChanges();
+                    await this._iModelDb.pullAndMergeChanges(actx, this._accessToken, IModelVersion.latest());
+                    await this._iModelDb.pushChanges(actx, this._accessToken!);
+                } else {
+                    await this._changeSetGenerator.pushFirstChangeSetTransaction(this._iModelDb);
+                    await this._iModelDb.pullAndMergeChanges(actx, this._accessToken!);
+                    await this._iModelDb.pushChanges(actx, this._accessToken!);
+                }
                 Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Successful Async Initialization`);
                 this._isInitialized = true;
             } catch (error) {
@@ -84,9 +109,11 @@ export class ChangesetGenerationHarness {
     }
     public async generateChangesets(changesetSequence: TestChangesetSequence): Promise<boolean> {
         await this.initialize();
-        const changesetGenerator: ChangesetGenerator = new ChangesetGenerator(this._accessToken!, this._hubUtility!,
-            this._physicalModelId!, this._categoryId!, this._codeSpecId!, actx, this._iModelDbHandler);
-        const retVal = await changesetGenerator.pushTestChangeSetsAndVersions(this._projectId!, this._iModelId!, changesetSequence);
+        if (!this._isInitialized) {
+            Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "Unable to Generate ChangeSets when async initializtion fails");
+            return false;
+        }
+        const retVal = await this._changeSetGenerator!.pushTestChangeSetsAndVersions(this._projectId!, this._iModelId!, changesetSequence);
         await this._iModelDb!.close(actx, this._accessToken!, KeepBriefcase.No);
         return retVal;
     }
@@ -104,7 +131,7 @@ export class ChangesetGenerationHarness {
     }
     /** Clean up the test output directory to prepare for fresh output */
     private _initializeOutputDirectory(): void {
-        if (!fs.existsSync(this._localIModelDbPath))
-            fs.mkdirSync(this._localIModelDbPath);
+        if (!fs.existsSync(this._localIModelDbPath!))
+            fs.mkdirSync(this._localIModelDbPath!);
     }
 }

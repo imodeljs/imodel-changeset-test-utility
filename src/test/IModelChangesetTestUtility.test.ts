@@ -8,18 +8,12 @@ import { TestMockObjects } from "./TestMockObjects";
 import { ChangesetGenerator } from "../ChangesetGenerator";
 import { main } from "../IModelChangesetCLUtility";
 import { expect } from "chai";
-function ensureEmailAndPassword() {
-    if (!(process.env.npm_package_config_email && process.env.npm_package_config_password)) {
-        process.env.npm_package_config_email = "fake@email.com";
-        process.env.npm_package_config_password = "fake_password";
-    }
-}
+import { ChangesetGenerationConfig } from "../ChangesetGenerationConfig";
+TestMockObjects.setupMockAppConfig();
 describe("TestChangesetSequence", () => {
     const changesetCount = 10;
     const numCreatedPerChangeset = 10;
-    beforeEach(() => {
-        ensureEmailAndPassword();
-    });
+
     it("Has elements deleted and updated per changeset as each half of the elements inserted", async () => {
         const sequence: TestChangesetSequence = new TestChangesetSequence(changesetCount, numCreatedPerChangeset);
         expect(sequence.elementsUpdatedPerChangeset).equals(numCreatedPerChangeset / 2, "updated = inserted / 2");
@@ -33,12 +27,9 @@ describe("TestChangesetSequence", () => {
 });
 
 describe("ChangesetGenerator", () => {
-    beforeEach(() => {
-        ensureEmailAndPassword();
-    });
     it("Pushed test changesets and pauses", async () => {
         const changesetGenerator: ChangesetGenerator = new ChangesetGenerator(TestMockObjects.getMockAccessToken(), TestMockObjects.getMockHubUtility(), TestMockObjects.getFakePhysicalModelId(),
-            TestMockObjects.getFakeCategoryId(), TestMockObjects.getFakeCodeSpecId(), TestMockObjects.getFakeActivityLoggingContext(), TestMockObjects.getMockIModelDbHandler());
+            TestMockObjects.getFakeCategoryId(), TestMockObjects.getFakeCodeSpecId(), TestMockObjects.getMockIModelDbHandler());
         const projectId = TestMockObjects.getFakeProjectId();
         const changesetSequence = new TestChangesetSequence(10, 10, 1);
         const iModelId = TestMockObjects.getFakeIModelId();
@@ -47,9 +38,7 @@ describe("ChangesetGenerator", () => {
 });
 
 describe("ChangesetGenerationHarness", () => {
-    beforeEach(() => {
-        ensureEmailAndPassword();
-    });
+
     it("Is Configured with project and harness Config objects", async () => {
         const harness: ChangesetGenerationHarness = new ChangesetGenerationHarness();
         expect(harness);
@@ -71,6 +60,7 @@ describe("IModelChangesetCLUtility", () => {
         await main(mockProcess, TestMockObjects.getMockChangesetGenerationHarness(throwsError));
     });
 });
+ChangesetGenerationConfig.setupConfig();
 /** Basic Integration test for change set creation and pushing into IModelHub. */
 describe("ChangesetGenerationHarnessIntegration (#integration)", () => {
     it("Generates configured changeset sequence", async () => {
