@@ -8,7 +8,7 @@ import { HubUtility } from "./HubUtility";
 import { IModelDbHandler } from "./IModelDbHandler";
 import { ChangesetGenerator } from "./ChangesetGenerator";
 import { TestChangesetSequence } from "./TestChangesetSequence";
-import { Id64, Logger, LogLevel, ActivityLoggingContext } from "@bentley/bentleyjs-core";
+import { Id64String, Logger, LogLevel, ActivityLoggingContext } from "@bentley/bentleyjs-core";
 import { IModelDb, IModelHost, IModelHostConfiguration, KeepBriefcase } from "@bentley/imodeljs-backend";
 import { IModel } from "@bentley/imodeljs-common";
 import { AccessToken } from "@bentley/imodeljs-clients";
@@ -27,9 +27,9 @@ export class ChangesetGenerationHarness {
     private _hubUtility?: HubUtility;
     private _accessToken?: AccessToken;
     private _projectId?: string;
-    private _physicalModelId?: Id64;
-    private _codeSpecId?: Id64;
-    private _categoryId?: Id64;
+    private _physicalModelId?: Id64String;
+    private _codeSpecId?: Id64String;
+    private _categoryId?: Id64String;
     private _changeSetGenerator?: ChangesetGenerator;
     private _physicalModelName = "ChangeSetUtil Physical Model";
     private _spatialCategoryName = "ChangeSetUtilCategory";
@@ -59,7 +59,7 @@ export class ChangesetGenerationHarness {
                 this._iModelId = await this._hubUtility.queryIModelIdByName(this._accessToken, this._projectId, ChangesetGenerationConfig.iModelName);
                 Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Opening latest iModel`);
                 this._iModelDb = await this._iModelDbHandler.openLatestIModelDb(this._accessToken!, this._projectId!, this._iModelId!);
-                const definitionModelId: Id64 = IModel.dictionaryId;
+                const definitionModelId: Id64String = IModel.dictionaryId;
                 let needToPrePush = false;
                 const physModelId = this._iModelDbHandler.getPhysModel(this._iModelDb, this._physicalModelName);
                 if (!physModelId) {

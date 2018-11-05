@@ -7,7 +7,7 @@ import { ChangesetGenerationConfig } from "./ChangesetGenerationConfig";
 import { HubUtility } from "./HubUtility";
 import { IModelDbHandler } from "./IModelDbHandler";
 import { TestChangesetSequence } from "./TestChangesetSequence";
-import { Id64, Logger, assert, ActivityLoggingContext, Guid/*, DbOpcode */} from "@bentley/bentleyjs-core";
+import { Id64String, Logger, assert, ActivityLoggingContext, Guid/*, DbOpcode */} from "@bentley/bentleyjs-core";
 import { IModelDb } from "@bentley/imodeljs-backend";
 import { GeometricElement3dProps, Code } from "@bentley/imodeljs-common";
 import { AccessToken } from "@bentley/imodeljs-clients";
@@ -29,11 +29,11 @@ export class ChangesetGenerator {
     private _currentLevel: number = 0;
     private _iModelDb?: IModelDb;
     private _codeSeed: number = Date.now();
-    private _updateIds?: Id64[];
-    private _deleteIds?: Id64[];
+    private _updateIds?: Id64String[];
+    private _deleteIds?: Id64String[];
     // Only writes to and updates iModelDb. Not responsible for opening or deleting it
     public constructor(private _accessToken: AccessToken, private _hubUtility: HubUtility,
-        private _physicalModelId: Id64, private _categoryId: Id64, private _codeSpecId: Id64,
+        private _physicalModelId: Id64String, private _categoryId: Id64String, private _codeSpecId: Id64String,
         private _iModelDbHandler: IModelDbHandler = new IModelDbHandler()) {
             Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "Initialized Changeset Generator");
             Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "--------------------------------------------------------------------------------------------");
@@ -70,8 +70,8 @@ export class ChangesetGenerator {
         this._deleteIds = [];
         return true;
     }
-    private async createTestChangeSet(testChangesetSequence: TestChangesetSequence): Promise<Id64[]> {
-        const insertedIds: Id64[] = [];
+    private async createTestChangeSet(testChangesetSequence: TestChangesetSequence): Promise<Id64String[]> {
+        const insertedIds: Id64String[] = [];
         for (let i = 0; i < testChangesetSequence.elementsCreatedPerChangeset; i++)
             insertedIds.push(this.insertTestElement(this._currentLevel, i));
         await this._iModelDb!.concurrencyControl.request(actx, this._accessToken);
@@ -107,21 +107,21 @@ export class ChangesetGenerator {
         assert(await this._hubUtility.createNamedVersion(this._accessToken, iModelId, name, description) !== undefined);
     }
 
-    private insertTestElement(level: number, block: number): Id64 {
+    private insertTestElement(level: number, block: number): Id64String {
         const name = ChangesetGenerator._getElementName(level, block);
         const userLabel = ChangesetGenerator._getElementUserLabel(level, block, "inserted");
         return this.insertElement(name, userLabel, ChangesetGenerator._getElementLocation(level, block), new Point3d(5, 5, 5));
     }
 
-    private updateTestElement(level: number, block: number, eid: Id64) {
+    private updateTestElement(level: number, block: number, eid: Id64String) {
         const userLabel = ChangesetGenerator._getElementUserLabel(level, block, "updated");
         this.updateElement(eid, userLabel, new Point3d(10, 10, 10));
     }
 
-    private deleteTestElement(eid: Id64) {
+    private deleteTestElement(eid: Id64String) {
         this._iModelDb!.elements.deleteElement(eid);
     }
-    private insertElement(name: string, userLabel: string, location: Point3d, size: Point3d = new Point3d(5, 5, 5)): Id64 {
+    private insertElement(name: string, userLabel: string, location: Point3d, size: Point3d = new Point3d(5, 5, 5)): Id64String {
         const testElementProps: GeometricElement3dProps = {
         classFullName: "Generic:PhysicalObject",
         model: this._physicalModelId!,
@@ -134,7 +134,7 @@ export class ChangesetGenerator {
         return this._iModelDb!.elements.insertElement(testElementProps);
     }
 
-    private updateElement(eid: Id64, newUserLabel: string, newSize: Point3d = new Point3d(10, 10, 10)) {
+    private updateElement(eid: Id64String, newUserLabel: string, newSize: Point3d = new Point3d(10, 10, 10)) {
 
         const element = this._iModelDb!.elements.getElement(eid);
         if (!element)

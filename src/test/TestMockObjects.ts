@@ -7,7 +7,7 @@ import { HubUtility } from "../HubUtility";
 import { ChangesetGenerationConfig } from "../ChangesetGenerationConfig";
 import { ChangesetGenerationHarness } from "../ChangesetGenerationHarness";
 import { IModelDbHandler } from "../IModelDbHandler";
-import { Id64, ActivityLoggingContext } from "@bentley/bentleyjs-core/lib/bentleyjs-core";
+import { Id64, Id64String, ActivityLoggingContext } from "@bentley/bentleyjs-core/lib/bentleyjs-core";
 import { AccessToken } from "@bentley/imodeljs-clients/lib";
 import { IModelDb, GeometricElement3d, ConcurrencyControl } from "@bentley/imodeljs-backend/lib/backend";
 import { Version } from "@bentley/imodeljs-clients/lib/imodelhub";
@@ -30,6 +30,18 @@ export class TestMockObjects {
             imjs_default_relying_party_uri: "https://fake.com",
         });
     }
+
+    public static clearMockAppConfig() {
+        Config.App.remove("imjs_agent_client_id");
+        Config.App.remove("imjs_agent_client_secret");
+        Config.App.remove("imjs_agent_service_user_email");
+        Config.App.remove("imjs_agent_service_user_password");
+        Config.App.remove("imjs_agent_project_name");
+        Config.App.remove("imjs_agent_imodel_name");
+        Config.App.remove("imjs_buddi_resolve_url_using_region");
+        Config.App.remove("imjs_default_relying_party_uri");
+    }
+
     public static getMockChangesetGenerationHarness(throwsError = false, returns = true): ChangesetGenerationHarness {
         const harness  = TypeMoq.Mock.ofType<ChangesetGenerationHarness>();
         harness.setup((_) => _.initialize()).returns(async () => {});
@@ -80,7 +92,7 @@ export class TestMockObjects {
         const mockIModelDbHandler = TypeMoq.Mock.ofType(IModelDbHandler);
         mockIModelDbHandler.setup((_) => _.openLatestIModelDb(TypeMoq.It.isAny(), TypeMoq.It.isAny(),
             TypeMoq.It.isAny())).returns(async () => this.getMockIModelDb());
-        mockIModelDbHandler.setup((_) => _.getPhysModel(TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() => new Id64("FakePhysModelId"));
+        mockIModelDbHandler.setup((_) => _.getPhysModel(TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() =>  Id64.fromString("FakePhysModelId"));
         mockIModelDbHandler.setup((_) => _.getCodeSpecByName(TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() => this.getMockCodeSpec());
         // mockIModelDbHandler.setup((_) => _.insertSpatialCategory(TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny(), TypeMoq.It.isAny())).returns(() => new Id64("FakeSpatialCategoryId"));
         return mockIModelDbHandler.object;
@@ -119,17 +131,17 @@ export class TestMockObjects {
     public static getFakeIModelId(): string {
         return "FAKE_IMODEL_ID";
     }
-    public static getFakeCategoryId(): Id64 {
-        return new Id64("FakeCategoryId");
+    public static getFakeCategoryId(): Id64String {
+        return Id64.fromString("FakeCategoryId");
     }
-    public static getFakeCodeSpecId(): Id64 {
-        return new Id64("FakeCodeSpecId");
+    public static getFakeCodeSpecId(): Id64String {
+        return Id64.fromString("FakeCodeSpecId");
     }
-    public static getFakePhysicalModelId(): Id64 {
-        return new Id64("FakePhysicalModelId");
+    public static getFakePhysicalModelId(): Id64String {
+        return Id64.fromString("FakePhysicalModelId");
     }
-    public static getFakeElementId(): Id64 {
-        return new Id64("FakeElementId");
+    public static getFakeElementId(): Id64String {
+        return Id64.fromString("FakeElementId");
     }
     public static getFakeProjectId(): string {
         return "FakePhysicalModelId";

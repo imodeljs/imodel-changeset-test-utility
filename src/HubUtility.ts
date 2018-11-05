@@ -6,7 +6,7 @@
 import { ChangesetGenerationConfig } from "./ChangesetGenerationConfig";
 import { AccessToken, ConnectClient, HubIModel, IModelHubClient, Project, IModelQuery, Version } from "@bentley/imodeljs-clients";
 import { AzureFileHandler } from "@bentley/imodeljs-clients/lib/imodelhub/AzureFileHandler";
-import { Logger, Guid } from "@bentley/bentleyjs-core";
+import { Logger } from "@bentley/bentleyjs-core";
 import { IModelVersion } from "@bentley/imodeljs-common";
 import { OidcAgentClient } from "@bentley/imodeljs-clients-backend/lib/OidcAgentClient";
 import { ActivityLoggingContext } from "@bentley/bentleyjs-core";
@@ -36,7 +36,7 @@ export class HubUtility {
     public async createNamedVersion(accessToken: AccessToken, iModelId: string, name: string, description: string): Promise<Version> {
         const changeSetId: string = await IModelVersion.latest().evaluateChangeSet(actx, accessToken, iModelId, this._hubClient);
         Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Creating named version "${name}" on the Hub`);
-        return await this._hubClient.Versions().create(actx, accessToken, new Guid(iModelId), changeSetId, name, description);
+        return await this._hubClient.Versions().create(actx, accessToken, iModelId, changeSetId, name, description);
     }
     /**
      * Queries the project id by its name
