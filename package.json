@@ -1,6 +1,6 @@
 {
   "name": "@bentley/imodel-changeset-test-utility",
-  "version": "0.0.39",
+  "version": "0.0.44",
   "private": false,
   "main": "lib/index.js",
   "typings": "lib/index",
@@ -25,18 +25,18 @@
     "url": "http://www.bentley.com"
   },
   "dependencies": {
-    "@bentley/bentleyjs-core": "^0.163.0",
-    "@bentley/geometry-core": "^0.163.0",
-    "@bentley/imodeljs-backend": "^0.163.0",
-    "@bentley/imodeljs-clients": "^0.163.0",
-    "@bentley/imodeljs-clients-backend": "^0.163.0",
-    "@bentley/imodeljs-common": "^0.163.0",
+    "@bentley/bentleyjs-core": "^0.171.0",
+    "@bentley/geometry-core": "^0.171.0",
+    "@bentley/imodeljs-backend": "^0.171.0",
+    "@bentley/imodeljs-clients": "^0.171.0",
+    "@bentley/imodeljs-clients-backend": "^0.171.0",
+    "@bentley/imodeljs-common": "^0.171.0",
     "minimist": "^1.2.0",
     "path": "^0.12.7",
     "react": "^16.0.0"
   },
   "devDependencies": {
-    "@bentley/build-tools": "^0.163.0",
+    "@bentley/build-tools": "^0.171.0",
     "@types/chai": "^4.1.4",
     "@types/mocha": "^2.2.48",
     "@types/node": "^10.5.7",

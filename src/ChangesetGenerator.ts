@@ -15,7 +15,7 @@ import { YawPitchRollAngles, Point3d, Box, Vector3d } from "@bentley/geometry-co
 import { GeometryStreamBuilder, GeometryStreamProps, IModelVersion } from "@bentley/imodeljs-common";
 
 /** Sleep for ms */
-const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const pause = async (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 /** Class to Save and Push CRUD operations for Elements in the IModelDb
  *  - Periodically creates changesets over GeometricElement3d's
  *    - Each Changeset consists of:

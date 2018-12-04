@@ -8,7 +8,7 @@ import { AccessToken, ConnectClient, HubIModel, IModelHubClient, Project, IModel
 import { AzureFileHandler } from "@bentley/imodeljs-clients/lib/imodelhub/AzureFileHandler";
 import { Logger } from "@bentley/bentleyjs-core";
 import { IModelVersion } from "@bentley/imodeljs-common";
-import { OidcAgentClient } from "@bentley/imodeljs-clients-backend/lib/OidcAgentClient";
+import { OidcAgentClient } from "@bentley/imodeljs-clients-backend";
 import { ActivityLoggingContext } from "@bentley/bentleyjs-core";
 
 const actx = new ActivityLoggingContext("");
@@ -36,7 +36,7 @@ export class HubUtility {
     public async createNamedVersion(accessToken: AccessToken, iModelId: string, name: string, description: string): Promise<Version> {
         const changeSetId: string = await IModelVersion.latest().evaluateChangeSet(actx, accessToken, iModelId, this._hubClient);
         Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Creating named version "${name}" on the Hub`);
-        return await this._hubClient.Versions().create(actx, accessToken, iModelId, changeSetId, name, description);
+        return this._hubClient.versions.create(actx, accessToken, iModelId, changeSetId, name, description);
     }
     /**
      * Queries the project id by its name
@@ -79,7 +79,7 @@ export class HubUtility {
     }
 
     private async _queryIModelByName(accessToken: AccessToken, projectId: string, iModelName: string): Promise<HubIModel | undefined> {
-        const iModels = await this._hubClient.IModels().get(actx, accessToken, projectId, new IModelQuery().byName(iModelName));
+        const iModels = await this._hubClient.iModels.get(actx, accessToken, projectId, new IModelQuery().byName(iModelName));
         if (iModels.length === 0)
             return undefined;
         if (iModels.length > 1)

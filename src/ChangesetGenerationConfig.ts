@@ -5,7 +5,7 @@
 
 import * as path from "path";
 import { Config } from "@bentley/imodeljs-clients";
-import { OidcAgentClientConfiguration } from "@bentley/imodeljs-clients-backend/lib/OidcAgentClient";
+import { OidcAgentClientConfiguration } from "@bentley/imodeljs-clients-backend";
 
 /**
  * Setup configuration for the application
@@ -27,7 +27,6 @@ export class ChangesetGenerationConfig {
 
             // -----------------------------------------------------------------------------------------------------------
             // Test project and iModel (REQUIRED)
-            // Must set these variables before testing - create a new project and iModel with the
             // developer registration procedure here - https://git.io/fx8YP
             // Note: These can be set in the environment also - e.g., "set imjs_agent_project_name=MyProject"
             // -----------------------------------------------------------------------------------------------------------
@@ -71,7 +70,7 @@ export class ChangesetGenerationConfig {
     }
 
     public static get loggingCategory(): string {
-        return "imodel-query-agent";
+        return "imodel-changeset-test-utility";
     }
 
     public static get numChangesets(): number {
