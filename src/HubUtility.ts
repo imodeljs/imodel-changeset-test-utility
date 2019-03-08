@@ -4,9 +4,9 @@
 *--------------------------------------------------------------------------------------------*/
 
 import { ChangesetGenerationConfig } from "./ChangesetGenerationConfig";
-import { AccessToken, ConnectClient, HubIModel, IModelHubClient, Project, IModelQuery, Version, AzureFileHandler } from "@bentley/imodeljs-clients";
+import { AccessToken, ConnectClient, HubIModel, IModelHubClient, Project, IModelQuery, Version } from "@bentley/imodeljs-clients";
 import { IModelVersion } from "@bentley/imodeljs-common";
-import { OidcAgentClient } from "@bentley/imodeljs-clients-backend";
+import { OidcAgentClient, AzureFileHandler } from "@bentley/imodeljs-clients-backend";
 import { Logger, ActivityLoggingContext } from "@bentley/bentleyjs-core";
 
 const actx = new ActivityLoggingContext("");
