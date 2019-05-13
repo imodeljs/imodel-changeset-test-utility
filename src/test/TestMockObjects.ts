@@ -7,8 +7,8 @@ import { HubUtility } from "../HubUtility";
 import { ChangesetGenerationConfig } from "../ChangesetGenerationConfig";
 import { ChangesetGenerationHarness } from "../ChangesetGenerationHarness";
 import { IModelDbHandler } from "../IModelDbHandler";
-import { Id64, Id64String, ActivityLoggingContext } from "@bentley/bentleyjs-core";
-import { AccessToken } from "@bentley/imodeljs-clients";
+import { Id64, Id64String } from "@bentley/bentleyjs-core";
+import { AccessToken, AuthorizedClientRequestContext } from "@bentley/imodeljs-clients";
 import { IModelDb, GeometricElement3d, ConcurrencyControl } from "@bentley/imodeljs-backend";
 import { Version } from "@bentley/imodeljs-clients";
 import * as TypeMoq from "typemoq";
@@ -105,8 +105,8 @@ export class TestMockObjects {
     const pathname: string = this.fakeIModelName + ".bim";
     return pathname;
   }
-  public static getFakeActivityLoggingContext(): ActivityLoggingContext {
-    return new ActivityLoggingContext("FAKE_ACTIVITY_ID");
+  public static getFakeActivityLoggingContext(): AuthorizedClientRequestContext {
+    return new AuthorizedClientRequestContext(this.getMockAccessToken());
   }
   public static getMockIModelDbElements(): IModelDb.Elements {
     const mockIModelDbElements: TypeMoq.IMock<IModelDb.Elements> = TypeMoq.Mock.ofType(IModelDb.Elements);

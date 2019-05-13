@@ -3,28 +3,28 @@
 * Licensed under the MIT License. See LICENSE.md in the project root for license terms.
 *--------------------------------------------------------------------------------------------*/
 
-import { Id64String, ActivityLoggingContext, Id64Set, Id64 } from "@bentley/bentleyjs-core";
+import { Id64String, Id64Set, Id64 } from "@bentley/bentleyjs-core";
 import { SubCategoryAppearance, CategoryProps, CodeScopeSpec, CodeSpec, ColorDef, IModel, InformationPartitionElementProps, DbResult, IModelVersion } from "@bentley/imodeljs-common";
 import { IModelDb, PhysicalModel, PhysicalElement, PhysicalPartition, SpatialCategory, OpenParams, Element, ECSqlStatement, ConcurrencyControl } from "@bentley/imodeljs-backend";
-import { AccessToken } from "@bentley/imodeljs-clients";
+import { AuthorizedClientRequestContext } from "@bentley/imodeljs-clients";
 import * as crypto from "crypto";
-const actx = new ActivityLoggingContext("");
+
 /** Injectable handles for opening IModels andStatic functions to create Models, CodeSecs, Categories, Category Selector, Styles, and View Definitions */
 export class IModelDbHandler {
   public constructor() { }
 
-  public async openLatestIModelDb(accessToken: AccessToken, projectId: string, iModelId: string,
+  public async openLatestIModelDb(authContext: AuthorizedClientRequestContext, projectId: string, iModelId: string,
     openParams: OpenParams = OpenParams.pullAndPush(), iModelVersion: IModelVersion = IModelVersion.latest()): Promise<IModelDb> {
-    const briefcase = await IModelDb.open(actx, accessToken, projectId!, iModelId!, openParams, iModelVersion);
+    const briefcase = await IModelDb.open(authContext, projectId!, iModelId!, openParams, iModelVersion);
     briefcase.concurrencyControl.setPolicy(new ConcurrencyControl.OptimisticPolicy());
     return briefcase;
   }
-  public async deletePhysModelElements(iModelDb: IModelDb, modelId: Id64String, accessToken: AccessToken): Promise<boolean> {
+  public async deletePhysModelElements(iModelDb: IModelDb, modelId: Id64String, authContext: AuthorizedClientRequestContext): Promise<boolean> {
     const elements = this.getPhysElementsFromModel(iModelDb, modelId);
     for (const element of elements) {
       iModelDb.elements.deleteElement(element.id);
     }
-    await iModelDb.concurrencyControl.request(actx, accessToken);
+    await iModelDb.concurrencyControl.request(authContext);
     iModelDb.saveChanges("Cleaned out elements from physical model");
     return elements.length > 0;
   }

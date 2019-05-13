@@ -8,13 +8,12 @@ import { HubUtility } from "./HubUtility";
 import { IModelDbHandler } from "./IModelDbHandler";
 import { ChangesetGenerator } from "./ChangesetGenerator";
 import { TestChangesetSequence } from "./TestChangesetSequence";
-import { Id64String, Logger, LogLevel, ActivityLoggingContext } from "@bentley/bentleyjs-core";
+import { Id64String, Logger, LogLevel } from "@bentley/bentleyjs-core";
 import { IModelDb, IModelHost, IModelHostConfiguration, KeepBriefcase } from "@bentley/imodeljs-backend";
-import { AccessToken, Config } from "@bentley/imodeljs-clients";
+import { AccessToken, Config, AuthorizedClientRequestContext } from "@bentley/imodeljs-clients";
 import * as fs from "fs";
 import { ColorDef, CodeScopeSpec, IModelVersion, IModel } from "@bentley/imodeljs-common";
 
-const actx = new ActivityLoggingContext("");
 /** Harness used to facilitate changeset generation */
 export class ChangesetGenerationHarness {
   private _iModelDbHandler: IModelDbHandler;
@@ -52,11 +51,12 @@ export class ChangesetGenerationHarness {
         if (!this._hubUtility)
           this._hubUtility = new HubUtility();
         this._accessToken = await this._hubUtility.login();
+        const authCtx = new AuthorizedClientRequestContext(this._accessToken!);
         Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Attempting to file projectId for ${ChangesetGenerationConfig.projectName}`);
-        this._projectId = await this._hubUtility.queryProjectIdByName(this._accessToken, ChangesetGenerationConfig.projectName);
-        this._iModelId = await this._hubUtility.queryIModelIdByName(this._accessToken, this._projectId, ChangesetGenerationConfig.iModelName);
+        this._projectId = await this._hubUtility.queryProjectIdByName(authCtx, ChangesetGenerationConfig.projectName);
+        this._iModelId = await this._hubUtility.queryIModelIdByName(authCtx, this._projectId, ChangesetGenerationConfig.iModelName);
         Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Opening latest iModel`);
-        this._iModelDb = await this._iModelDbHandler.openLatestIModelDb(this._accessToken!, this._projectId!, this._iModelId!);
+        this._iModelDb = await this._iModelDbHandler.openLatestIModelDb(authCtx, this._projectId!, this._iModelId!);
         const definitionModelId: Id64String = IModel.dictionaryId;
         let needToPrePush = false;
         Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Getting ChangeSet Physical Model`);
@@ -88,20 +88,20 @@ export class ChangesetGenerationHarness {
         this._changeSetGenerator = new ChangesetGenerator(this._accessToken!, this._hubUtility!,
           this._physicalModelId!, this._categoryId!, this._codeSpecId!, this._iModelDbHandler);
         if (needToPrePush) {
-          await this._iModelDb.concurrencyControl.request(actx, this._accessToken!);
+          await this._iModelDb.concurrencyControl.request(authCtx);
           this._iModelDb.saveChanges();
-          await this._iModelDb.pullAndMergeChanges(actx, this._accessToken, IModelVersion.latest());
-          await this._iModelDb.pushChanges(actx, this._accessToken!);
+          await this._iModelDb.pullAndMergeChanges(authCtx, IModelVersion.latest());
+          await this._iModelDb.pushChanges(authCtx);
         }
-        if (await this._iModelDbHandler.deletePhysModelElements(this._iModelDb, this._physicalModelId, this._accessToken!)) {
-          await this._iModelDb.concurrencyControl.request(actx, this._accessToken!);
+        if (await this._iModelDbHandler.deletePhysModelElements(this._iModelDb, this._physicalModelId, authCtx)) {
+          await this._iModelDb.concurrencyControl.request(authCtx);
           this._iModelDb.saveChanges();
-          await this._iModelDb.pullAndMergeChanges(actx, this._accessToken, IModelVersion.latest());
-          await this._iModelDb.pushChanges(actx, this._accessToken!);
+          await this._iModelDb.pullAndMergeChanges(authCtx, IModelVersion.latest());
+          await this._iModelDb.pushChanges(authCtx);
         } else {
           await this._changeSetGenerator.pushFirstChangeSetTransaction(this._iModelDb);
-          await this._iModelDb.pullAndMergeChanges(actx, this._accessToken!);
-          await this._iModelDb.pushChanges(actx, this._accessToken!);
+          await this._iModelDb.pullAndMergeChanges(authCtx);
+          await this._iModelDb.pushChanges(authCtx);
         }
         Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Successful Async Initialization`);
         this._isInitialized = true;
@@ -112,12 +112,13 @@ export class ChangesetGenerationHarness {
   }
   public async generateChangesets(changesetSequence: TestChangesetSequence): Promise<boolean> {
     await this.initialize();
+    const authCtx = new AuthorizedClientRequestContext(this._accessToken!);
     if (!this._isInitialized) {
       Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "Unable to Generate ChangeSets when async initializtion fails");
       return false;
     }
     const retVal = await this._changeSetGenerator!.pushTestChangeSetsAndVersions(this._projectId!, this._iModelId!, changesetSequence);
-    await this._iModelDb!.close(actx, this._accessToken!, KeepBriefcase.No);
+    await this._iModelDb!.close(authCtx, KeepBriefcase.No);
     return retVal;
   }
 

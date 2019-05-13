@@ -7,9 +7,9 @@ import { ChangesetGenerationConfig } from "./ChangesetGenerationConfig";
 import { HubUtility } from "./HubUtility";
 import { IModelDbHandler } from "./IModelDbHandler";
 import { TestChangesetSequence } from "./TestChangesetSequence";
-import { Id64String, Logger, assert, ActivityLoggingContext, Guid/*, DbOpcode */ } from "@bentley/bentleyjs-core";
+import { Id64String, Logger, assert, Guid } from "@bentley/bentleyjs-core";
 import { IModelDb } from "@bentley/imodeljs-backend";
-import { AccessToken } from "@bentley/imodeljs-clients";
+import { AccessToken, AuthorizedClientRequestContext } from "@bentley/imodeljs-clients";
 import { YawPitchRollAngles, Point3d, Box, Vector3d } from "@bentley/geometry-core";
 import { GeometryStreamBuilder, GeometryStreamProps, IModelVersion, GeometricElement3dProps, Code } from "@bentley/imodeljs-common";
 
@@ -23,29 +23,30 @@ const pause = async (ms: number) => new Promise((resolve) => setTimeout(resolve,
  *          -Updates change the label and geometry for the blocks
  *    - If N % 2 == 0 creates a named version for the changeset
  */
-const actx = new ActivityLoggingContext("");
 export class ChangesetGenerator {
   private _currentLevel: number = 0;
   private _iModelDb?: IModelDb;
   private _codeSeed: number = Date.now();
   private _updateIds?: Id64String[];
   private _deleteIds?: Id64String[];
+  private _authCtx: AuthorizedClientRequestContext;
   // Only writes to and updates iModelDb. Not responsible for opening or deleting it
   public constructor(private _accessToken: AccessToken, private _hubUtility: HubUtility,
     private _physicalModelId: Id64String, private _categoryId: Id64String, private _codeSpecId: Id64String,
     private _iModelDbHandler: IModelDbHandler = new IModelDbHandler()) {
+    this._authCtx = new AuthorizedClientRequestContext(this._accessToken);
     Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "Initialized Changeset Generator");
     Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "--------------------------------------------------------------------------------------------");
   }
   public async pushFirstChangeSetTransaction(iModelDb: IModelDb): Promise<void> {
     this._iModelDb = iModelDb;
     this.insertElement(`${Guid.createValue()}`, `FIRST ELEMENT: ${Guid.createValue()}`, new Point3d(-1000, -1000, -10000 * Math.random()));
-    await this._iModelDb.concurrencyControl.request(actx, this._accessToken);
+    await this._iModelDb.concurrencyControl.request(this._authCtx);
     this._iModelDb.saveChanges("Pushed First Change");
   }
   /** Pushes new change sets to the Hub periodically and sets up named versions */
   public async pushTestChangeSetsAndVersions(projectId: string, iModelId: string, testChangesetSequence: TestChangesetSequence): Promise<boolean> {
-    this._iModelDb = await this._iModelDbHandler.openLatestIModelDb(this._accessToken, projectId, iModelId);
+    this._iModelDb = await this._iModelDbHandler.openLatestIModelDb(this._authCtx, projectId, iModelId);
     const untilLevel = this._currentLevel + testChangesetSequence.changesetCount;
     while (this._currentLevel < untilLevel) {
       try {
@@ -73,7 +74,7 @@ export class ChangesetGenerator {
     const insertedIds: Id64String[] = [];
     for (let i = 0; i < testChangesetSequence.elementsCreatedPerChangeset; i++)
       insertedIds.push(this.insertTestElement(this._currentLevel, i));
-    await this._iModelDb!.concurrencyControl.request(actx, this._accessToken);
+    await this._iModelDb!.concurrencyControl.request(this._authCtx);
     this._iModelDb!.saveChanges(`Inserted ${testChangesetSequence.elementsCreatedPerChangeset} elements into level ${this._currentLevel}`);
     if (this._currentLevel > 0) {
       let i = 0;
@@ -81,12 +82,12 @@ export class ChangesetGenerator {
         this.updateTestElement(this._currentLevel - 1, i, updateId);
         i++;
       }
-      await this._iModelDb!.concurrencyControl.request(actx, this._accessToken);
+      await this._iModelDb!.concurrencyControl.request(this._authCtx);
       this._iModelDb!.saveChanges(`Updated ${testChangesetSequence.elementsUpdatedPerChangeset} elements in level ${this._currentLevel - 1}`);
 
       for (const deleteId of this._deleteIds!)
         this.deleteTestElement(deleteId);
-      await this._iModelDb!.concurrencyControl.request(actx, this._accessToken);
+      await this._iModelDb!.concurrencyControl.request(this._authCtx);
       this._iModelDb!.saveChanges(`Deleted ${testChangesetSequence.elementsDeletedPerChangeset} elements in level ${this._currentLevel - 1}`);
     }
     return insertedIds;
@@ -94,16 +95,16 @@ export class ChangesetGenerator {
   private async pushTestChangeSet(testChangesetSequence: TestChangesetSequence) {
     const description = ChangesetGenerator._getChangeSetDescription(this._currentLevel, testChangesetSequence);
     Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Pushing change set "${description}" to the Hub`);
-    await this._iModelDb!.concurrencyControl.request(actx, this._accessToken);
+    await this._iModelDb!.concurrencyControl.request(this._authCtx);
     this._iModelDb!.saveChanges("Pushed First Change");
-    await this._iModelDb!.pullAndMergeChanges(actx, this._accessToken, IModelVersion.latest());
-    await this._iModelDb!.pushChanges(actx, this._accessToken, () => description);
+    await this._iModelDb!.pullAndMergeChanges(this._authCtx, IModelVersion.latest());
+    await this._iModelDb!.pushChanges(this._authCtx, () => description);
   }
 
   private async createNamedVersion(iModelId: string) {
     const name = ChangesetGenerator._getVersionName(this._currentLevel);
     const description = ChangesetGenerator._getVersionDescription(this._currentLevel);
-    assert(await this._hubUtility.createNamedVersion(this._accessToken, iModelId, name, description) !== undefined);
+    assert(await this._hubUtility.createNamedVersion(this._authCtx, iModelId, name, description) !== undefined);
   }
 
   private insertTestElement(level: number, block: number): Id64String {
