@@ -21,8 +21,6 @@ export class ChangesetGenerationConfig {
       // -----------------------------------------------------------------------------------------------------------
       // imjs_agent_client_id: "Set this to client id",
       // imjs_agent_client_secret: "Set this to the client secret",
-      // imjs_agent_service_user_email: "Set this to the email of the service user",
-      // imjs_agent_service_user_password: "Set this to the password of the service user",
 
       // -----------------------------------------------------------------------------------------------------------
       // Test project and iModel (REQUIRED)
@@ -36,7 +34,7 @@ export class ChangesetGenerationConfig {
       // Other application settings (NOT REQUIRED)
       // -----------------------------------------------------------------------------------------------------------
       imjs_default_relying_party_uri: "https://connect-wsg20.bentley.com",
-      imjs_agent_scope: "openid email profile organization context-registry-service imodelhub imodeljs-backend-2686",
+      imjs_agent_scope: "urlps-third-party context-registry-service imodelhub",
     });
   }
 
@@ -52,8 +50,6 @@ export class ChangesetGenerationConfig {
     return {
       clientId: Config.App.getString("imjs_agent_client_id"),
       clientSecret: Config.App.getString("imjs_agent_client_secret"),
-      serviceUserEmail: Config.App.getString("imjs_agent_service_user_email"),
-      serviceUserPassword: Config.App.getString("imjs_agent_service_user_password"),
       scope: Config.App.getString("imjs_agent_scope"),
     };
   }

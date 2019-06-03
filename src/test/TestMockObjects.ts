@@ -34,8 +34,6 @@ export class TestMockObjects {
   public static clearMockAppConfig() {
     Config.App.remove("imjs_agent_client_id");
     Config.App.remove("imjs_agent_client_secret");
-    Config.App.remove("imjs_agent_service_user_email");
-    Config.App.remove("imjs_agent_service_user_password");
     Config.App.remove("imjs_agent_project_name");
     Config.App.remove("imjs_agent_imodel_name");
     Config.App.remove("imjs_buddi_resolve_url_using_region");

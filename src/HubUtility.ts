@@ -25,10 +25,10 @@ export class HubUtility {
   public async login(): Promise<AccessToken> {
     // TODO: remove openid-client.d.ts once imodeljs changes don't require it
     const oidcConfig = ChangesetGenerationConfig.oidcAgentClientConfiguration;
-    Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Attempting to login to OIDC for ${oidcConfig.serviceUserEmail}`);
+    Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Attempting to login to OIDC for ${oidcConfig.clientId}`);
     const client = new OidcAgentClient(oidcConfig);
     const jwt: AccessToken = await client.getToken(actx);
-    Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Successful login for ${oidcConfig.serviceUserEmail}`);
+    Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Successful login for ${oidcConfig.clientId}`);
     return jwt;
   }
   public async createNamedVersion(authContext: AuthorizedClientRequestContext, iModelId: string, name: string, description: string): Promise<Version> {
