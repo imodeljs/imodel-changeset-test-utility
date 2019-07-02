@@ -5,3 +5,4 @@ node_modules
 lib
 output
 .nyc_output
+env_vars.sh

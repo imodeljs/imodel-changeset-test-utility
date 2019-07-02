@@ -1,13 +1,12 @@
 {
   "name": "@bentley/imodel-changeset-test-utility",
-  "version": "0.0.53",
-  "private": false,
+  "version": "0.0.55",
   "main": "lib/index.js",
   "typings": "lib/index",
   "description": "Creates and pushed configurable change sets to iModels",
   "license": "MIT",
   "scripts": {
-    "build": "tsc --rootDir ./src",
+    "build": "tsc",
     "clean": "rimraf lib",
     "clean-output": "rimraf ./lib/output",
     "lint": "tslint --project .",
@@ -25,27 +24,27 @@
     "url": "http://www.bentley.com"
   },
   "dependencies": {
-    "@bentley/bentleyjs-core": "1.0.0",
-    "@bentley/geometry-core": "1.0.0",
-    "@bentley/imodeljs-backend": "1.0.0",
-    "@bentley/imodeljs-clients": "1.0.0",
-    "@bentley/imodeljs-clients-backend": "1.0.0",
-    "@bentley/imodeljs-common": "1.0.0",
+    "@bentley/bentleyjs-core": "1.1.0",
+    "@bentley/geometry-core": "1.1.0",
+    "@bentley/imodeljs-backend": "1.1.0",
+    "@bentley/imodeljs-clients": "1.1.0",
+    "@bentley/imodeljs-clients-backend": "1.1.0",
+    "@bentley/imodeljs-common": "1.1.0",
     "minimist": "^1.2.0",
     "path": "^0.12.7"
   },
   "devDependencies": {
-    "@bentley/build-tools": "1.0.0",
+    "@bentley/build-tools": "1.1.0",
     "@types/chai": "^4.1.4",
     "@types/mocha": "^2.2.48",
     "@types/node": "^10.5.7",
     "chai": "^4.1.2",
     "debug": "^3.1.0",
     "mocha": "^5.2.0",
-    "nyc": "^13.3.0",
+    "nyc": "^14.0.0",
     "tslint": "^5.11.0",
     "typemoq": "^2.1.0",
-    "typescript": "^3.0.1"
+    "typescript": "^3.5.0"
   },
   "nyc": {
     "include": [

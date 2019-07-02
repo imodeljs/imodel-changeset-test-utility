@@ -127,7 +127,7 @@ export class ChangesetGenerationHarness {
     Logger.setLevelDefault(LogLevel.Error);
     Logger.setLevel(ChangesetGenerationConfig.loggingCategory, LogLevel.Trace);
     Logger.logTrace(ChangesetGenerationConfig.loggingCategory, "Logger initialized...");
-    Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `${Config.App}`);
+    Logger.logTrace(ChangesetGenerationConfig.loggingCategory, `Configuration: ${JSON.stringify(Config.App)}`);
   }
   private _initializeIModelHost(): void {
     const configuration = new IModelHostConfiguration();

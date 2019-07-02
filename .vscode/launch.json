@@ -8,12 +8,8 @@
             "type": "node",
             "request": "launch",
             "name": "Launch Program",
-            "program": "${workspaceFolder}/lib/IModelChangesetCLUtililty.js",
-            "args": [
-                "--email=Regular.IModelJsTestUser@mailinator.com", "--password=Regular@iMJs", "--projectName=NodeJsTestProject",
-                "--iModelName=ChangesetUtility", "--imsEnv=QA", "--hubEnv=QA", "--numChangesets=5",
-                "--numCreatedPerChangeset=25", "--changesetPushDelay=500"
-            ],
+            "program": "${workspaceFolder}/lib/IModelChangesetCLUtility.js",
+            "args": [],
             "outFiles": [
                 "${workspaceFolder}/lib/**/*.js"
             ]
