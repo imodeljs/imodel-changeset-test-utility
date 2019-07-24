@@ -6,3 +6,4 @@ lib
 output
 .nyc_output
 env_vars.sh
+tsconfig.tsbuildinfo
