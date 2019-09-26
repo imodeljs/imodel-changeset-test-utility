@@ -1,5 +1,7 @@
 # imodel-changeset-test-utility
 
+> NOTE: This repository has been archived and all future updates to the [imodel-changeset-test-utility](https://github.com/imodeljs/imodeljs-samples/tree/master/tools/imodel-changeset-test-utility) will be made in the [iModel.js Samples](https://github.com/imodeljs/imodeljs-samples) repository.
+
 Copyright © 2019 Bentley Systems, Incorporated. All rights reserved.
 
 Test utility for generating and pushing change sets to an iModel in the iModelHub. The utility creates change sets by inserting and updating geometric elements, and periodically pushes them to the iModelHub.
